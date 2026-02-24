@@ -8,14 +8,17 @@ import type {
 
 /**
  * Ensure an ISO string from the API is parsed as UTC.
- * AviationStack returns times in UTC; if the string has no timezone (no Z or +00:00),
- * the browser would parse it as local time, giving wrong times and wrong upcoming/historical split.
+ * API returns times like '2026-02-24T01:06:00+00:00'. We normalize to end with 'Z' so
+ * new Date(utcIso) always interprets the time as UTC (some environments can mis-parse +00:00).
+ * Result: 01:06 UTC → 5:06 PM PT when displayed with timeZone America/Los_Angeles.
  */
 function ensureUtcIso(iso: string | null): string | null {
   if (!iso || typeof iso !== "string") return null;
   const s = iso.trim();
   if (!s) return null;
   if (/[zZ]$/.test(s)) return s;
+  if (/\+00:00$/.test(s)) return s.slice(0, -6) + "Z";
+  if (/\+0000$/.test(s)) return s.slice(0, -5) + "Z";
   if (/[+-]\d{2}:?\d{2}(?::?\d{2})?$/.test(s)) return s;
   return s + "Z";
 }
