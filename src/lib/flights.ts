@@ -84,6 +84,40 @@ function parseUtcTime(iso: string | null): number {
   return new Date(utcIso).getTime();
 }
 
+/** UTC timestamp for midnight (00:00) "today" in the given IANA timezone. */
+function getStartOfTodayInTimezone(timezone: string): number {
+  const now = new Date();
+  const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = dateFormatter.formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "0";
+  const y = parseInt(get("year"), 10);
+  const m = parseInt(get("month"), 10) - 1;
+  const d = parseInt(get("day"), 10);
+  const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const wantDate = `${get("year")}-${get("month")}-${get("day")}`;
+  for (let hour = 0; hour < 24; hour++) {
+    const candidate = Date.UTC(y, m, d, hour, 0, 0, 0);
+    const dayParts = dayFormatter.formatToParts(candidate);
+    const dayGet = (type: string) => dayParts.find((p) => p.type === type)?.value ?? "";
+    const dayDate = `${dayGet("year")}-${dayGet("month")}-${dayGet("day")}`;
+    if (dayDate === wantDate && dayGet("hour") === "00" && dayGet("minute") === "00") return candidate;
+  }
+  return Date.UTC(y, m, d, 0, 0, 0, 0);
+}
+
 export function normalizeFlight(raw: AviationStackFlight): DisplayFlight {
   const tz = raw.departure.timezone || "UTC";
   return {
@@ -163,18 +197,20 @@ const STATUS_ORDER: Record<FlightStatus, number> = {
 };
 
 /**
- * Filter flights by upcoming (scheduled >= now) vs historical (scheduled < now).
- * Uses current UTC moment so all future flights appear in Upcoming.
+ * Filter flights by upcoming vs historical using the airport's local date.
+ * Upcoming = scheduled time (UTC) is on or after start of "today" in airportTimezone
+ * (midnight in the airport). So 6:12 AM PT today still appears in Upcoming even if
+ * current UTC time is later. Historical = before start of today in airport timezone.
  */
 export function filterByUpcomingOrHistorical(
   flights: DisplayFlight[],
   upcoming: boolean,
-  _airportTimezone: string
+  airportTimezone: string
 ): DisplayFlight[] {
-  const now = Date.now();
+  const cutoff = getStartOfTodayInTimezone(airportTimezone);
   return flights.filter((f) => {
     const t = parseUtcTime(f.scheduledIso);
-    return upcoming ? t >= now : t < now;
+    return upcoming ? t >= cutoff : t < cutoff;
   });
 }
 
