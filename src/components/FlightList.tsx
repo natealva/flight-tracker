@@ -54,8 +54,8 @@ export function FlightList({
   const isDeparture = type === "departure";
 
   const filteredByTime = useMemo(
-    () => filterByUpcomingOrHistorical(flights, showUpcoming),
-    [flights, showUpcoming]
+    () => filterByUpcomingOrHistorical(flights, showUpcoming, airportTimezone),
+    [flights, showUpcoming, airportTimezone]
   );
 
   const airlines = useMemo(() => {

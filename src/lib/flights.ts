@@ -44,6 +44,47 @@ function parseUtcTime(iso: string | null): number {
   return new Date(utcIso).getTime();
 }
 
+/**
+ * Return the UTC timestamp for midnight (00:00:00) "today" in the given IANA timezone.
+ * Used so Upcoming = flights from start of today (in airport time) onward; Historical = before that.
+ */
+function getStartOfTodayInTimezone(timezone: string): number {
+  const now = new Date();
+  const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = dateFormatter.formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "0";
+  const y = parseInt(get("year"), 10);
+  const m = parseInt(get("month"), 10) - 1;
+  const d = parseInt(get("day"), 10);
+
+  const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const wantDate = `${get("year")}-${get("month")}-${get("day")}`;
+  for (let hour = 0; hour < 24; hour++) {
+    const candidate = Date.UTC(y, m, d, hour, 0, 0, 0);
+    const dayParts = dayFormatter.formatToParts(candidate);
+    const dayGet = (type: string) => dayParts.find((p) => p.type === type)?.value ?? "";
+    const dayDate = `${dayGet("year")}-${dayGet("month")}-${dayGet("day")}`;
+    const dayHour = dayGet("hour");
+    const dayMin = dayGet("minute");
+    if (dayDate === wantDate && dayHour === "00" && dayMin === "00") return candidate;
+  }
+  return Date.UTC(y, m, d, 0, 0, 0, 0);
+}
+
 export function normalizeFlight(raw: AviationStackFlight): DisplayFlight {
   const tz = raw.departure.timezone || "UTC";
   return {
@@ -122,15 +163,21 @@ const STATUS_ORDER: Record<FlightStatus, number> = {
   cancelled: 5,
 };
 
-/** Filter flights by upcoming (scheduled >= now) or historical (scheduled < now). Uses UTC for comparison. */
+/**
+ * Filter flights by upcoming vs historical using the selected airport's local date.
+ * Upcoming = scheduled time (in UTC) is on or after start of "today" in airportTimezone.
+ * Historical = scheduled time is before start of today in airportTimezone.
+ * This way when it's still 2/23 in LA, flights on 2/24 UTC that are still 2/23 in LA appear in Upcoming.
+ */
 export function filterByUpcomingOrHistorical(
   flights: DisplayFlight[],
-  upcoming: boolean
+  upcoming: boolean,
+  airportTimezone: string
 ): DisplayFlight[] {
-  const now = Date.now();
+  const cutoff = getStartOfTodayInTimezone(airportTimezone);
   return flights.filter((f) => {
     const t = parseUtcTime(f.scheduledIso);
-    return upcoming ? t >= now : t < now;
+    return upcoming ? t >= cutoff : t < cutoff;
   });
 }
 
