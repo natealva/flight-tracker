@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import type { DisplayFlight, StatusFilterOption, SortOption } from "@/types/flights";
 import {
   statusLabel,
@@ -224,6 +225,7 @@ export function FlightList({
               flight={flight}
               showDestination={isDeparture}
               airportTimezone={airportTimezone}
+              showPlanPickup={!isDeparture}
             />
           ))
         )}
@@ -236,10 +238,12 @@ function FlightRow({
   flight,
   showDestination,
   airportTimezone,
+  showPlanPickup,
 }: {
   flight: DisplayFlight;
   showDestination: boolean;
   airportTimezone: string;
+  showPlanPickup?: boolean;
 }) {
   const place = showDestination
     ? { name: flight.destination, iata: flight.destinationIata }
@@ -261,6 +265,14 @@ function FlightRow({
         <span className="text-slate-700 text-sm truncate min-w-0 flex-1">
           {place.iata} — {place.name}
         </span>
+        {showPlanPickup && (
+          <Link
+            href={`/pickup?flight=${encodeURIComponent(flight.flightIata)}`}
+            className="text-cyan-600 hover:text-cyan-700 text-sm font-medium whitespace-nowrap"
+          >
+            Plan Pickup
+          </Link>
+        )}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm">
         <span className="text-slate-600">

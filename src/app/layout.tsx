@@ -21,6 +21,16 @@ export default function RootLayout({
   return (
     <html lang="en" className={outfit.variable}>
       <body className="font-sans antialiased bg-white text-slate-900">
+        <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
+          <nav className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-center gap-6">
+            <a href="/" className="text-slate-700 hover:text-slate-900 font-medium">
+              Flight Tracker
+            </a>
+            <a href="/pickup" className="text-cyan-600 font-medium">
+              Plan a Pickup
+            </a>
+          </nav>
+        </header>
         {children}
       </body>
     </html>
