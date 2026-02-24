@@ -6,7 +6,7 @@ import { FlightList } from "@/components/FlightList";
 import type { AirportOption } from "@/components/AirportSearch";
 import type { DisplayFlight } from "@/types/flights";
 import type { AviationStackResponse } from "@/types/flights";
-import { normalizeFlight, normalizeArrival } from "@/lib/flights";
+import { normalizeFlight, normalizeArrival, formatTimestampInTimezone } from "@/lib/flights";
 
 export default function HomePage() {
   const [selectedAirport, setSelectedAirport] = useState<AirportOption | null>(null);
@@ -18,17 +18,19 @@ export default function HomePage() {
   const [loadingArr, setLoadingArr] = useState(false);
   const [errorDep, setErrorDep] = useState<string | null>(null);
   const [errorArr, setErrorArr] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const handleSelect = useCallback((airport: AirportOption) => {
     setSelectedAirport(airport);
   }, []);
 
   useEffect(() => {
-    if (!selectedAirport) {
+        if (!selectedAirport) {
       setDepartures([]);
       setArrivals([]);
       setErrorDep(null);
       setErrorArr(null);
+      setLastUpdated(null);
       return;
     }
 
@@ -45,6 +47,7 @@ export default function HomePage() {
         } else {
           setErrorDep(null);
           setDepartures((json.data ?? []).map(normalizeFlight));
+          setLastUpdated(Date.now());
         }
       })
       .catch(() => {
@@ -64,6 +67,7 @@ export default function HomePage() {
         } else {
           setErrorArr(null);
           setArrivals((json.data ?? []).map(normalizeArrival));
+          setLastUpdated(Date.now());
         }
       })
       .catch(() => {
@@ -103,6 +107,11 @@ export default function HomePage() {
                   {selectedAirport.name} ({selectedAirport.code})
                 </p>
                 <p className="text-slate-600">{selectedAirport.city}</p>
+                {lastUpdated != null && (
+                  <p className="text-slate-500 text-xs mt-1">
+                    Last updated {formatTimestampInTimezone(lastUpdated, selectedAirport.timezone)}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-600">View:</span>

@@ -23,7 +23,7 @@ function ensureUtcIso(iso: string | null): string | null {
   return s + "Z";
 }
 
-/** Format an ISO time string (UTC) in a given IANA timezone (e.g. America/Los_Angeles). */
+/** Format an ISO time string (UTC) in a given IANA timezone — time only. */
 export function formatTimeInTimezone(iso: string | null, timezone: string): string {
   const utcIso = ensureUtcIso(iso);
   if (!utcIso) return "—";
@@ -40,52 +40,48 @@ export function formatTimeInTimezone(iso: string | null, timezone: string): stri
   }
 }
 
+/** Format an ISO time string (UTC) in airport timezone as date + time (e.g. "Feb 25, 5:50 AM"). */
+export function formatDateTimeInTimezone(iso: string | null, timezone: string): string {
+  const utcIso = ensureUtcIso(iso);
+  if (!utcIso) return "—";
+  try {
+    const d = new Date(utcIso);
+    return d.toLocaleString("en-US", {
+      timeZone: timezone,
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "—";
+  }
+}
+
+/** Format a timestamp (ms) in a timezone for "Last updated" (e.g. "Feb 23, 6:45 PM"). */
+export function formatTimestampInTimezone(ms: number, timezone: string): string {
+  try {
+    const d = new Date(ms);
+    return d.toLocaleString("en-US", {
+      timeZone: timezone,
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "";
+  }
+}
+
 /** Parse ISO as UTC and return timestamp for comparison (upcoming/historical). */
 function parseUtcTime(iso: string | null): number {
   const utcIso = ensureUtcIso(iso);
   if (!utcIso) return 0;
   return new Date(utcIso).getTime();
-}
-
-/**
- * Return the UTC timestamp for midnight (00:00:00) "today" in the given IANA timezone.
- * Used so Upcoming = flights from start of today (in airport time) onward; Historical = before that.
- */
-function getStartOfTodayInTimezone(timezone: string): number {
-  const now = new Date();
-  const dateFormatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = dateFormatter.formatToParts(now);
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "0";
-  const y = parseInt(get("year"), 10);
-  const m = parseInt(get("month"), 10) - 1;
-  const d = parseInt(get("day"), 10);
-
-  const dayFormatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const wantDate = `${get("year")}-${get("month")}-${get("day")}`;
-  for (let hour = 0; hour < 24; hour++) {
-    const candidate = Date.UTC(y, m, d, hour, 0, 0, 0);
-    const dayParts = dayFormatter.formatToParts(candidate);
-    const dayGet = (type: string) => dayParts.find((p) => p.type === type)?.value ?? "";
-    const dayDate = `${dayGet("year")}-${dayGet("month")}-${dayGet("day")}`;
-    const dayHour = dayGet("hour");
-    const dayMin = dayGet("minute");
-    if (dayDate === wantDate && dayHour === "00" && dayMin === "00") return candidate;
-  }
-  return Date.UTC(y, m, d, 0, 0, 0, 0);
 }
 
 export function normalizeFlight(raw: AviationStackFlight): DisplayFlight {
@@ -167,20 +163,18 @@ const STATUS_ORDER: Record<FlightStatus, number> = {
 };
 
 /**
- * Filter flights by upcoming vs historical using the selected airport's local date.
- * Upcoming = scheduled time (in UTC) is on or after start of "today" in airportTimezone.
- * Historical = scheduled time is before start of today in airportTimezone.
- * This way when it's still 2/23 in LA, flights on 2/24 UTC that are still 2/23 in LA appear in Upcoming.
+ * Filter flights by upcoming (scheduled >= now) vs historical (scheduled < now).
+ * Uses current UTC moment so all future flights appear in Upcoming.
  */
 export function filterByUpcomingOrHistorical(
   flights: DisplayFlight[],
   upcoming: boolean,
-  airportTimezone: string
+  _airportTimezone: string
 ): DisplayFlight[] {
-  const cutoff = getStartOfTodayInTimezone(airportTimezone);
+  const now = Date.now();
   return flights.filter((f) => {
     const t = parseUtcTime(f.scheduledIso);
-    return upcoming ? t >= cutoff : t < cutoff;
+    return upcoming ? t >= now : t < now;
   });
 }
 
@@ -229,7 +223,7 @@ export function filterByStatusOption(
   }
 }
 
-/** Sort flights: by scheduled time (closest to now first), estimated time, or status. */
+/** Sort flights: by scheduled time (soonest first), estimated time, or status. */
 export function sortFlights(
   flights: DisplayFlight[],
   sortBy: SortOption,
@@ -242,8 +236,7 @@ export function sortFlights(
       sorted.sort((a, b) => {
         const ta = parseUtcTime(a.scheduledIso);
         const tb = parseUtcTime(b.scheduledIso);
-        if (upcoming) return ta - tb; // soonest first
-        return tb - ta; // most recent first for historical
+        return ta - tb; // always soonest first
       });
       break;
     }
@@ -251,8 +244,7 @@ export function sortFlights(
       sorted.sort((a, b) => {
         const ta = a.estimatedIso ? parseUtcTime(a.estimatedIso) : parseUtcTime(a.scheduledIso);
         const tb = b.estimatedIso ? parseUtcTime(b.estimatedIso) : parseUtcTime(b.scheduledIso);
-        if (upcoming) return ta - tb;
-        return tb - ta;
+        return ta - tb; // soonest first
       });
       break;
     }

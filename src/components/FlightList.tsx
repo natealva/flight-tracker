@@ -5,6 +5,7 @@ import type { DisplayFlight, StatusFilterOption, SortOption } from "@/types/flig
 import {
   statusLabel,
   statusColor,
+  formatDateTimeInTimezone,
   formatTimeInTimezone,
   filterByUpcomingOrHistorical,
   filterByAirline,
@@ -244,10 +245,11 @@ function FlightRow({
     ? { name: flight.destination, iata: flight.destinationIata }
     : { name: flight.origin, iata: flight.originIata };
   const tz = airportTimezone || flight.timezone || "UTC";
-  const scheduledTime = formatTimeInTimezone(flight.scheduledIso, tz);
+  const scheduledDateTime = formatDateTimeInTimezone(flight.scheduledIso, tz);
   const estimatedTime = flight.estimatedIso
     ? formatTimeInTimezone(flight.estimatedIso, tz)
     : null;
+  const scheduledTimeOnly = formatTimeInTimezone(flight.scheduledIso, tz);
 
   return (
     <div className="px-5 py-3 bg-white hover:bg-slate-50/80 transition-colors">
@@ -262,8 +264,8 @@ function FlightRow({
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm">
         <span className="text-slate-600">
-          Scheduled {scheduledTime}
-          {estimatedTime && estimatedTime !== scheduledTime && (
+          Scheduled {scheduledDateTime}
+          {estimatedTime && estimatedTime !== scheduledTimeOnly && (
             <span className="text-slate-500 ml-1">(est. {estimatedTime})</span>
           )}
         </span>
