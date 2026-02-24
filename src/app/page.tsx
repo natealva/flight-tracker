@@ -137,6 +137,7 @@ export default function HomePage() {
                 loading={loadingDep}
                 error={errorDep}
                 showUpcoming={showUpcoming}
+                airportTimezone={selectedAirport.timezone}
               />
               <FlightList
                 flights={arrivals}
@@ -144,6 +145,7 @@ export default function HomePage() {
                 loading={loadingArr}
                 error={errorArr}
                 showUpcoming={showUpcoming}
+                airportTimezone={selectedAirport.timezone}
               />
             </div>
           </div>

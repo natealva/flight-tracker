@@ -34,6 +34,8 @@ type FlightListProps = {
   loading?: boolean;
   error?: string | null;
   showUpcoming: boolean;
+  /** IANA timezone of the selected airport (e.g. America/Los_Angeles) for correct local time display */
+  airportTimezone: string;
 };
 
 export function FlightList({
@@ -42,6 +44,7 @@ export function FlightList({
   loading,
   error,
   showUpcoming,
+  airportTimezone,
 }: FlightListProps) {
   const [filterAirline, setFilterAirline] = useState("");
   const [filterPlace, setFilterPlace] = useState("");
@@ -219,6 +222,7 @@ export function FlightList({
               key={`${flight.flightIata}-${flight.scheduledIso}`}
               flight={flight}
               showDestination={isDeparture}
+              airportTimezone={airportTimezone}
             />
           ))
         )}
@@ -230,14 +234,16 @@ export function FlightList({
 function FlightRow({
   flight,
   showDestination,
+  airportTimezone,
 }: {
   flight: DisplayFlight;
   showDestination: boolean;
+  airportTimezone: string;
 }) {
   const place = showDestination
     ? { name: flight.destination, iata: flight.destinationIata }
     : { name: flight.origin, iata: flight.originIata };
-  const tz = flight.timezone || "UTC";
+  const tz = airportTimezone || flight.timezone || "UTC";
   const scheduledTime = formatTimeInTimezone(flight.scheduledIso, tz);
   const estimatedTime = flight.estimatedIso
     ? formatTimeInTimezone(flight.estimatedIso, tz)

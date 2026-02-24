@@ -6,11 +6,26 @@ import type {
   StatusFilterOption,
 } from "@/types/flights";
 
-/** Format an ISO time string in a given IANA timezone (e.g. America/Los_Angeles). */
+/**
+ * Ensure an ISO string from the API is parsed as UTC.
+ * AviationStack returns times in UTC; if the string has no timezone (no Z or +00:00),
+ * the browser would parse it as local time, giving wrong times and wrong upcoming/historical split.
+ */
+function ensureUtcIso(iso: string | null): string | null {
+  if (!iso || typeof iso !== "string") return null;
+  const s = iso.trim();
+  if (!s) return null;
+  if (/[zZ]$/.test(s)) return s;
+  if (/[+-]\d{2}:?\d{2}(?::?\d{2})?$/.test(s)) return s;
+  return s + "Z";
+}
+
+/** Format an ISO time string (UTC) in a given IANA timezone (e.g. America/Los_Angeles). */
 export function formatTimeInTimezone(iso: string | null, timezone: string): string {
-  if (!iso) return "—";
+  const utcIso = ensureUtcIso(iso);
+  if (!utcIso) return "—";
   try {
-    const d = new Date(iso);
+    const d = new Date(utcIso);
     return d.toLocaleTimeString("en-US", {
       timeZone: timezone,
       hour: "numeric",
@@ -20,6 +35,13 @@ export function formatTimeInTimezone(iso: string | null, timezone: string): stri
   } catch {
     return "—";
   }
+}
+
+/** Parse ISO as UTC and return timestamp for comparison (upcoming/historical). */
+function parseUtcTime(iso: string | null): number {
+  const utcIso = ensureUtcIso(iso);
+  if (!utcIso) return 0;
+  return new Date(utcIso).getTime();
 }
 
 export function normalizeFlight(raw: AviationStackFlight): DisplayFlight {
@@ -33,8 +55,8 @@ export function normalizeFlight(raw: AviationStackFlight): DisplayFlight {
     originIata: raw.departure.iata,
     destination: raw.arrival.airport,
     destinationIata: raw.arrival.iata,
-    scheduledIso: raw.departure.scheduled,
-    estimatedIso: raw.departure.estimated,
+    scheduledIso: ensureUtcIso(raw.departure.scheduled) ?? raw.departure.scheduled,
+    estimatedIso: ensureUtcIso(raw.departure.estimated) ?? raw.departure.estimated,
     timezone: tz,
     status: raw.flight_status,
     delayMinutes: raw.departure.delay,
@@ -52,8 +74,8 @@ export function normalizeArrival(raw: AviationStackFlight): DisplayFlight {
     originIata: raw.departure.iata,
     destination: raw.arrival.airport,
     destinationIata: raw.arrival.iata,
-    scheduledIso: raw.arrival.scheduled,
-    estimatedIso: raw.arrival.estimated,
+    scheduledIso: ensureUtcIso(raw.arrival.scheduled) ?? raw.arrival.scheduled,
+    estimatedIso: ensureUtcIso(raw.arrival.estimated) ?? raw.arrival.estimated,
     timezone: tz,
     status: raw.flight_status,
     delayMinutes: raw.arrival.delay,
@@ -100,14 +122,14 @@ const STATUS_ORDER: Record<FlightStatus, number> = {
   cancelled: 5,
 };
 
-/** Filter flights by upcoming (scheduled >= now) or historical (scheduled < now). */
+/** Filter flights by upcoming (scheduled >= now) or historical (scheduled < now). Uses UTC for comparison. */
 export function filterByUpcomingOrHistorical(
   flights: DisplayFlight[],
   upcoming: boolean
 ): DisplayFlight[] {
   const now = Date.now();
   return flights.filter((f) => {
-    const t = new Date(f.scheduledIso).getTime();
+    const t = parseUtcTime(f.scheduledIso);
     return upcoming ? t >= now : t < now;
   });
 }
@@ -164,13 +186,12 @@ export function sortFlights(
   upcoming: boolean
 ): DisplayFlight[] {
   const sorted = [...flights];
-  const now = Date.now();
 
   switch (sortBy) {
     case "scheduled": {
       sorted.sort((a, b) => {
-        const ta = new Date(a.scheduledIso).getTime();
-        const tb = new Date(b.scheduledIso).getTime();
+        const ta = parseUtcTime(a.scheduledIso);
+        const tb = parseUtcTime(b.scheduledIso);
         if (upcoming) return ta - tb; // soonest first
         return tb - ta; // most recent first for historical
       });
@@ -178,8 +199,8 @@ export function sortFlights(
     }
     case "estimated": {
       sorted.sort((a, b) => {
-        const ta = a.estimatedIso ? new Date(a.estimatedIso).getTime() : new Date(a.scheduledIso).getTime();
-        const tb = b.estimatedIso ? new Date(b.estimatedIso).getTime() : new Date(b.scheduledIso).getTime();
+        const ta = a.estimatedIso ? parseUtcTime(a.estimatedIso) : parseUtcTime(a.scheduledIso);
+        const tb = b.estimatedIso ? parseUtcTime(b.estimatedIso) : parseUtcTime(b.scheduledIso);
         if (upcoming) return ta - tb;
         return tb - ta;
       });
