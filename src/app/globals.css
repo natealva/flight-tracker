@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --background: #0c1222;
-  --foreground: #f1f5f9;
-  --card: #0f172a;
-  --border: #1e293b;
-  --accent: #22d3ee;
-  --accent-muted: #0891b2;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #f8fafc;
+  --border: #e2e8f0;
+  --accent: #0891b2;
+  --accent-muted: #0e7490;
 }
 
 body {
@@ -20,16 +20,16 @@ body {
 /* Subtle grid background for depth */
 .bg-grid-pattern {
   background-image: 
-    linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(8, 145, 178, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 145, 178, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
-/* Glow effect for search focus */
+/* Search focus ring */
 .search-glow {
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.2), 0 0 24px -4px rgba(34, 211, 238, 0.15);
+  box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.15), 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .search-glow:focus-within {
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.4), 0 0 32px -4px rgba(34, 211, 238, 0.25);
+  box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.35), 0 4px 12px rgba(0,0,0,0.08);
 }

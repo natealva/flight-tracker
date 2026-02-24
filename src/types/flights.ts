@@ -77,8 +77,23 @@ export interface DisplayFlight {
   originIata: string;
   destination: string;
   destinationIata: string;
-  scheduledTime: string;
-  estimatedTime: string | null;
+  /** ISO string for the scheduled time (departure or arrival depending on list) */
+  scheduledIso: string;
+  /** ISO string for estimated time, if any */
+  estimatedIso: string | null;
+  /** IANA timezone for the airport where scheduled/estimated apply (e.g. America/Los_Angeles) */
+  timezone: string;
   status: FlightStatus;
   delayMinutes: number | null;
 }
+
+/** Filter by status category for UI */
+export type StatusFilterOption =
+  | "all"
+  | "delayed"
+  | "on_time"
+  | "scheduled"
+  | "cancelled"
+  | "in_flight";
+
+export type SortOption = "scheduled" | "estimated" | "status";

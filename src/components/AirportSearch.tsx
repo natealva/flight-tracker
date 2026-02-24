@@ -6,30 +6,32 @@ export type AirportOption = {
   name: string;
   code: string;
   city: string;
+  /** IANA timezone (e.g. America/Los_Angeles) for local time display */
+  timezone: string;
 };
 
-// Seed data for demo — replace with API later
+// Seed data with timezones for local time display
 const AIRPORTS: AirportOption[] = [
-  { name: "Los Angeles International", code: "LAX", city: "Los Angeles, CA" },
-  { name: "San Francisco International", code: "SFO", city: "San Francisco, CA" },
-  { name: "John F. Kennedy International", code: "JFK", city: "New York, NY" },
-  { name: "LaGuardia", code: "LGA", city: "New York, NY" },
-  { name: "O'Hare International", code: "ORD", city: "Chicago, IL" },
-  { name: "Miami International", code: "MIA", city: "Miami, FL" },
-  { name: "Denver International", code: "DEN", city: "Denver, CO" },
-  { name: "Seattle-Tacoma International", code: "SEA", city: "Seattle, WA" },
-  { name: "Hartsfield-Jackson Atlanta International", code: "ATL", city: "Atlanta, GA" },
-  { name: "Dallas/Fort Worth International", code: "DFW", city: "Dallas, TX" },
-  { name: "Phoenix Sky Harbor International", code: "PHX", city: "Phoenix, AZ" },
-  { name: "Boston Logan International", code: "BOS", city: "Boston, MA" },
-  { name: "London Heathrow", code: "LHR", city: "London, UK" },
-  { name: "London Gatwick", code: "LGW", city: "London, UK" },
-  { name: "Paris Charles de Gaulle", code: "CDG", city: "Paris, France" },
-  { name: "Tokyo Haneda", code: "HND", city: "Tokyo, Japan" },
-  { name: "Dubai International", code: "DXB", city: "Dubai, UAE" },
-  { name: "Singapore Changi", code: "SIN", city: "Singapore" },
-  { name: "Amsterdam Schiphol", code: "AMS", city: "Amsterdam, Netherlands" },
-  { name: "Frankfurt am Main", code: "FRA", city: "Frankfurt, Germany" },
+  { name: "Los Angeles International", code: "LAX", city: "Los Angeles, CA", timezone: "America/Los_Angeles" },
+  { name: "San Francisco International", code: "SFO", city: "San Francisco, CA", timezone: "America/Los_Angeles" },
+  { name: "John F. Kennedy International", code: "JFK", city: "New York, NY", timezone: "America/New_York" },
+  { name: "LaGuardia", code: "LGA", city: "New York, NY", timezone: "America/New_York" },
+  { name: "O'Hare International", code: "ORD", city: "Chicago, IL", timezone: "America/Chicago" },
+  { name: "Miami International", code: "MIA", city: "Miami, FL", timezone: "America/New_York" },
+  { name: "Denver International", code: "DEN", city: "Denver, CO", timezone: "America/Denver" },
+  { name: "Seattle-Tacoma International", code: "SEA", city: "Seattle, WA", timezone: "America/Los_Angeles" },
+  { name: "Hartsfield-Jackson Atlanta International", code: "ATL", city: "Atlanta, GA", timezone: "America/New_York" },
+  { name: "Dallas/Fort Worth International", code: "DFW", city: "Dallas, TX", timezone: "America/Chicago" },
+  { name: "Phoenix Sky Harbor International", code: "PHX", city: "Phoenix, AZ", timezone: "America/Phoenix" },
+  { name: "Boston Logan International", code: "BOS", city: "Boston, MA", timezone: "America/New_York" },
+  { name: "London Heathrow", code: "LHR", city: "London, UK", timezone: "Europe/London" },
+  { name: "London Gatwick", code: "LGW", city: "London, UK", timezone: "Europe/London" },
+  { name: "Paris Charles de Gaulle", code: "CDG", city: "Paris, France", timezone: "Europe/Paris" },
+  { name: "Tokyo Haneda", code: "HND", city: "Tokyo, Japan", timezone: "Asia/Tokyo" },
+  { name: "Dubai International", code: "DXB", city: "Dubai, UAE", timezone: "Asia/Dubai" },
+  { name: "Singapore Changi", code: "SIN", city: "Singapore", timezone: "Asia/Singapore" },
+  { name: "Amsterdam Schiphol", code: "AMS", city: "Amsterdam, Netherlands", timezone: "Europe/Amsterdam" },
+  { name: "Frankfurt am Main", code: "FRA", city: "Frankfurt, Germany", timezone: "Europe/Berlin" },
 ];
 
 type AirportSearchProps = {
@@ -103,11 +105,11 @@ export function AirportSearch({ onSelect }: AirportSearchProps) {
   return (
     <div ref={containerRef} className="relative">
       <div
-        className="search-glow rounded-2xl border border-slate-600/50 bg-slate-900/80 backdrop-blur transition-all duration-200"
+        className="search-glow rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200"
         onKeyDown={handleKeyDown}
       >
         <div className="flex items-center gap-3 px-5 py-4">
-          <span className="text-slate-500" aria-hidden>
+          <span className="text-slate-400" aria-hidden>
             <svg
               className="w-5 h-5"
               fill="none"
@@ -131,7 +133,7 @@ export function AirportSearch({ onSelect }: AirportSearchProps) {
             }}
             onFocus={() => setIsOpen(true)}
             placeholder="Search by airport name or code (e.g. LAX, San Francisco)"
-            className="flex-1 min-w-0 bg-transparent text-white placeholder-slate-500 text-base focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-slate-900 placeholder-slate-500 text-base focus:outline-none"
             aria-label="Search airports"
             role="combobox"
             aria-expanded={isOpen}
@@ -143,7 +145,7 @@ export function AirportSearch({ onSelect }: AirportSearchProps) {
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="text-slate-500 hover:text-slate-300 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              className="text-slate-500 hover:text-slate-700 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
               aria-label="Clear search"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,10 +159,10 @@ export function AirportSearch({ onSelect }: AirportSearchProps) {
           <ul
             id="airport-listbox"
             role="listbox"
-            className="border-t border-slate-700/50 max-h-72 overflow-y-auto rounded-b-2xl py-2"
+            className="border-t border-slate-200 max-h-72 overflow-y-auto rounded-b-2xl py-2"
           >
             {matches.length === 0 ? (
-              <li className="px-5 py-4 text-slate-500 text-sm">No airports found. Try a different search.</li>
+              <li className="px-5 py-4 text-slate-600 text-sm">No airports found. Try a different search.</li>
             ) : (
               matches.map((airport, i) => (
                 <li
@@ -172,13 +174,13 @@ export function AirportSearch({ onSelect }: AirportSearchProps) {
                   onMouseEnter={() => setHighlightIndex(i)}
                   className={`px-5 py-3 cursor-pointer transition-colors ${
                     i === highlightIndex
-                      ? "bg-cyan-500/15 text-cyan-300"
-                      : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
+                      ? "bg-cyan-100 text-cyan-800"
+                      : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
                   <span className="font-medium">{airport.name}</span>
                   <span className="text-slate-500 ml-2">({airport.code})</span>
-                  <span className="block text-slate-500 text-sm mt-0.5">{airport.city}</span>
+                  <span className="block text-slate-600 text-sm mt-0.5">{airport.city}</span>
                 </li>
               ))
             )}
